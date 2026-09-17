@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#8B0000">
+<title>Detention Memo Generator</title>
+<style>
+  :root{
+    --maroon:#8B0000;
+    --maroon-dark:#6b0000;
+    --maroon-light:#a91d1d;
+    --accent:#ff8a65;
+    --peach:#fbe0d0;
+    --cream:#fdeecb;
+    --green-bg:#d9f2df;
+    --pink-bg:#fbdada;
+    --border:#e6dcdc;
+    --bg:#f5f2f0;
+    --panel:#ffffff;
+    --text:#241d1a;
+    --muted:#8a7d77;
+    --radius:16px;
+    --radius-sm:10px;
+    --shadow:0 2px 10px rgba(139,0,0,.07);
+    --shadow-lg:0 8px 24px rgba(139,0,0,.15);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; font-family:'Segoe UI', system-ui, Arial, sans-serif; background:var(--bg); color:var(--text);
+    min-height:100vh; overscroll-behavior-y:none;
+  }
+
+  /* ============ APP SHELL ============ */
+  .app{ max-width:520px; margin:0 auto; min-height:100vh; background:var(--bg); display:flex; flex-direction:column; position:relative; }
+
+  /* ---- Top App Bar ---- */
+  .topbar{
+    display:flex; align-items:center; gap:10px;
+    background:linear-gradient(135deg, var(--maroon) 0%, var(--maroon-dark) 100%); color:#fff;
+    padding:calc(14px + var(--safe-top)) 16px 14px 16px;
+    position:sticky; top:0; z-index:30; box-shadow:0 2px 12px rgba(0,0,0,.18);
+  }
+  .topbar-icon{
+    width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.14); border:none; color:#fff;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; cursor:pointer;
+  }
+  .topbar-icon:active{ background:rgba(255,255,255,.28); }
+  .topbar-title{ font-size:16px; font-weight:700; letter-spacing:.2px; flex:1; }
+  .topbar-sub{ font-size:11px; opacity:.85; font-weight:400; margin-top:1px; }
+
+  /* ---- Content Area ---- */
+  .content{ flex:1; padding:14px 14px calc(90px + var(--safe-bottom)) 14px; overflow-x:hidden; }
+
+  .page{ display:none; animation:fadeIn .22s ease; }
+  .page.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .page-header{ margin:4px 2px 14px 2px; }
+  .page-header h2{ font-size:20px; margin:0 0 3px 0; color:var(--maroon-dark); font-weight:800; }
+  .page-header p{ font-size:12.5px; color:var(--muted); margin:0; line-height:1.5; }
+
+  /* ---- Bottom Tab Bar (mobile-app style) ---- */
+  .bottomnav{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    max-width:520px; margin:0 auto;
+    background:#fff; border-top:1px solid var(--border);
+    display:flex; padding:6px 4px calc(6px + var(--safe-bottom)) 4px;
+    box-shadow:0 -4px 16px rgba(0,0,0,.06);
+  }
+  .nav-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:7px 2px; border-radius:12px; cursor:pointer; color:var(--muted);
+    font-size:10px; font-weight:600; border:none; background:none; transition:.15s;
+  }
+  .nav-item .nav-ico{ font-size:19px; line-height:1; }
+  .nav-item.active{ color:var(--maroon); }
+  .nav-item.active .nav-ico{ transform:scale(1.08); }
+  .nav-item:active{ background:var(--peach); }
+
+  /* ============ CARDS & FORM ELEMENTS ============ */
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px;
+    margin-bottom:14px; box-shadow:var(--shadow);
+  }
+  .card-title{
+    font-size:13px; font-weight:700; color:var(--maroon-dark); margin:0 0 12px 0;
+    display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:.4px;
+  }
+
+  label{ display:block; font-size:12.5px; color:var(--muted); margin-bottom:5px; margin-top:14px; font-weight:600; }
+  label:first-of-type{ margin-top:0; }
+  label .opt{ font-weight:400; font-style:italic; color:#b0a5a0; }
+
+  input[type=text], input[type=time], input[type=date], input[type=number], textarea, select{
+    width:100%; padding:12px 13px; border:1.5px solid #e2d4d4; border-radius:var(--radius-sm); font-size:16px;
+    font-family:inherit; background:#fcfaf9; color:var(--text); transition:.15s; -webkit-appearance:none; appearance:none;
+  }
+  input:focus, textarea:focus, select:focus{
+    outline:none; border-color:var(--maroon); background:#fff; box-shadow:0 0 0 3px rgba(139,0,0,.08);
+  }
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9'><path d='M1 1l6 6 6-6' stroke='%238B0000' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+    background-repeat:no-repeat; background-position:right 13px center; padding-right:34px;
+  }
+  textarea{ resize:vertical; font-family:'Consolas', monospace; font-size:13px; }
+
+  .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .row > div{ flex:1; min-width:135px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  button{
+    background:linear-gradient(135deg, var(--maroon) 0%, var(--maroon-dark) 100%); color:#fff; border:none;
+    padding:13px 18px; border-radius:var(--radius-sm); font-size:14.5px; cursor:pointer; margin-top:16px;
+    font-weight:700; width:100%; box-shadow:0 3px 10px rgba(139,0,0,.25); transition:.12s;
+    display:flex; align-items:center; justify-content:center; gap:7px;
+  }
+  button:active{ transform:scale(.98); box-shadow:0 1px 4px rgba(139,0,0,.25); }
+  button.secondary{ background:#f0ebe9; color:var(--maroon-dark); box-shadow:none; border:1.5px solid var(--border); }
+  button.small{ width:auto; padding:8px 14px; margin-top:0; font-size:13px; }
+  button.ghost{ background:none; color:var(--maroon); box-shadow:none; padding:8px 4px; width:auto; margin-top:8px; font-size:13px; }
+  button.fab-inline{ background:var(--maroon-dark); }
+
+  .btn-row{ display:flex; gap:10px; }
+  .btn-row button{ margin-top:12px; }
+
+  table.list{ width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
+  table.list th, table.list td{ border-bottom:1px solid var(--border); padding:9px 8px; text-align:left; }
+  table.list th{ background:var(--peach); color:var(--maroon-dark); font-size:11.5px; text-transform:uppercase; letter-spacing:.3px; }
+  table.list tr:last-child td{ border-bottom:none; }
+  .del-btn{
+    color:#a33; cursor:pointer; font-weight:700; width:26px; height:26px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; background:var(--pink-bg); font-size:13px;
+  }
+  .del-btn:active{ background:#f5b8b8; }
+
+  .checkrow{ display:flex; align-items:center; gap:10px; padding:10px 4px; font-size:14px; border-bottom:1px solid #f2ecec; }
+  .checkrow:last-child{ border-bottom:none; }
+  .checkrow input[type=checkbox]{ width:19px; height:19px; accent-color:var(--maroon); flex-shrink:0; }
+
+  .hint{ font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5; }
+  .hint.warn{ color:#b5651d; }
+
+  .chip-row{ display:flex; gap:8px; margin-top:8px; }
+  .chip-row .checkrow{ flex:1; border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:11px; border-bottom:1.5px solid var(--border); justify-content:center; }
+  .chip-row input[type=radio]{ width:17px; height:17px; accent-color:var(--maroon); }
+  .chip-row .checkrow:has(input:checked){ border-color:var(--maroon); background:var(--peach); }
+
+  .mapping-row{ display:flex; gap:8px; align-items:center; margin-top:8px; }
+  .mapping-row input, .mapping-row select{ flex:1; }
+  .mapping-row .del-btn{ flex:0 0 auto; }
+
+  .empty-msg{ color:var(--muted); font-style:italic; padding:18px 6px; text-align:center; font-size:13px; }
+
+  .badge{ display:inline-block; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:20px; }
+  .badge.T{ background:#dfeaff; color:#1a4faa; }
+  .badge.E{ background:#ffe8cc; color:#a15c00; }
+  .badge.Loco{ background:#e6dcff; color:#5b2fa8; }
+  .badge.ACP{ background:#ffdada; color:#a32424; }
+  .badge.C\&W{ background:#d3f5e6; color:#0e7a4f; }
+  .badge.S\&T{ background:#d3f0f5; color:#0e6c7a; }
+  .badge.Com{ background:#fff2c2; color:#8a6d00; }
+  .badge.OHE{ background:#f0d3f5; color:#8a0e7a; }
+  .badge.Misc{ background:#eee; color:#555; }
+
+  /* ---- remark autocomplete field ---- */
+  .remark-field{ position:relative; }
+  .remark-field input{ padding-right:34px; }
+  .remark-field .clear-x{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%); width:22px; height:22px; border-radius:50%;
+    background:#eee; color:#888; font-size:13px; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .remark-suggestions{
+    position:absolute; left:0; right:0; top:calc(100% + 4px); background:#fff; border:1.5px solid var(--border);
+    border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); z-index:15; max-height:220px; overflow-y:auto; display:none;
+  }
+  .remark-suggestions.show{ display:block; }
+  .remark-suggestions .sug-item{
+    padding:11px 13px; font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:8px;
+    border-bottom:1px solid #f2ecec; cursor:pointer;
+  }
+  .remark-suggestions .sug-item:last-child{ border-bottom:none; }
+  .remark-suggestions .sug-item:active, .remark-suggestions .sug-item.hl{ background:var(--peach); }
+  .remark-suggestions .sug-item .sug-text{ flex:1; }
+  .remark-suggestions .sug-empty{ padding:12px 13px; font-size:12.5px; color:var(--muted); font-style:italic; }
+  .quick-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .quick-chip{
+    font-size:12px; padding:6px 11px; border-radius:20px; background:var(--peach); color:var(--maroon-dark);
+    font-weight:600; cursor:pointer; border:1px solid var(--border);
+  }
+  .quick-chip:active{ background:var(--maroon); color:#fff; }
+
+  /* ---- manual detention entry cards (instead of raw table on mobile) ---- */
+  .det-entry{
+    border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:12px; margin-top:10px; background:#fcfaf9;
+  }
+  .det-entry .det-section-label{ font-size:13px; font-weight:700; color:var(--maroon-dark); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .det-entry .det-fields{ display:grid; grid-template-columns:100px 1fr; gap:8px; }
+  .det-entry.has-value{ border-color:var(--maroon); background:#fff8f5; }
+
+  /* ---- floating quick-action button ---- */
+  .fab{
+    position:fixed; right:calc(50% - 260px + 18px); bottom:calc(78px + var(--safe-bottom)); z-index:29;
+    width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg, var(--maroon) 0%, var(--maroon-dark) 100%);
+    color:#fff; border:none; font-size:24px; box-shadow:0 5px 16px rgba(139,0,0,.4); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  @media (max-width:556px){ .fab{ right:18px; } }
+  .fab:active{ transform:scale(.94); }
+
+  /* ============ MEMO OUTPUT ============ */
+  .memo{
+    background:#fff; border:3px solid var(--maroon); border-radius:14px; padding:22px 18px; width:100%; margin:16px auto 0 auto;
+  }
+  .memo h3{ text-align:center; color:var(--maroon); font-style:italic; font-size:20px; margin:0 0 6px 0; }
+  .memo hr{ border:none; border-top:3px solid var(--maroon); margin:0 0 14px 0; }
+  .memo .grid2{ display:grid; grid-template-columns:1fr 1fr; row-gap:7px; column-gap:8px; font-size:13.5px; margin-bottom:12px; }
+  .memo .grid2 span.k{ color:var(--maroon); font-weight:700; }
+  .memo .kv{ display:flex; gap:6px; }
+  .memo .divider-dashed{ border-top:1px dashed #bbb; margin:8px 0 12px 0; }
+  .memo table{ width:100%; border-collapse:collapse; margin-bottom:14px; font-size:12.5px; }
+  .memo table th{ background:var(--peach); color:var(--maroon-dark); padding:6px 5px; text-align:center; }
+  .memo table td{ border:1px solid #eee; padding:6px 5px; text-align:center; }
+  .memo table td.section-col, .memo table td.remark-col{ text-align:left; }
+  .memo .total-row td{ background:var(--cream); font-weight:700; color:var(--maroon-dark); }
+  .memo .perf-title{ color:var(--maroon-dark); font-weight:700; border-bottom:2px solid var(--maroon); padding-bottom:4px; margin-bottom:10px; font-size:13.5px; }
+  .memo .perf-table th{ background:#eee; color:#444; }
+  .memo .perf-table td.gain-total{ background:var(--green-bg); font-weight:700; color:#1a6b2f; }
+  .memo .perf-table td.loss-total{ background:var(--pink-bg); font-weight:700; color:#a33; }
+  .memo .footer{ text-align:right; font-style:italic; margin-top:12px; font-size:12.5px; }
+  .memo-actions{ display:flex; gap:10px; width:100%; margin:14px auto 0 auto; }
+  .memo-actions button{ margin-top:0; }
+
+  @media (min-width:521px){
+    .memo{ max-width:760px; padding:26px 30px; }
+    .memo h3{ font-size:24px; }
+    .memo .grid2{ font-size:15px; }
+    .memo table{ font-size:14.5px; }
+    .memo table th, .memo table td{ padding:8px 10px; }
+  }
+
+  /* ---- overlay / modal (copy box) ---- */
+  .overlay-modal{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100; display:flex; align-items:flex-end; justify-content:center;
+  }
+  .overlay-modal .sheet{
+    background:#fff; border-radius:20px 20px 0 0; padding:18px 18px calc(18px + var(--safe-bottom)) 18px;
+    max-width:520px; width:100%; max-height:82vh; display:flex; flex-direction:column; animation:slideUp .22s ease;
+  }
+  @keyframes slideUp{ from{ transform:translateY(30px); opacity:0;} to{ transform:translateY(0); opacity:1;} }
+  .sheet-handle{ width:40px; height:4px; background:#ddd; border-radius:3px; margin:0 auto 12px auto; }
+
+  /* ---- toast ---- */
+  .toast{
+    position:fixed; left:50%; bottom:calc(96px + var(--safe-bottom)); transform:translateX(-50%);
+    background:#2a2320; color:#fff; padding:10px 18px; border-radius:24px; font-size:13px; z-index:200;
+    box-shadow:0 4px 14px rgba(0,0,0,.3); opacity:0; transition:opacity .25s ease; pointer-events:none;
+  }
+  .toast.show{ opacity:1; }
+
+  /* progress step pill for memo page */
+  .steps{ display:flex; gap:6px; margin-bottom:14px; }
+  .steps .step{ flex:1; height:4px; border-radius:3px; background:#e6dcdc; }
+  .steps .step.done{ background:var(--maroon); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="topbar">
+    <button class="topbar-icon" onclick="location.reload()">☰</button>
+    <div>
+      <div class="topbar-title" id="topbarTitle">Section Master</div>
+      <div class="topbar-sub">Detention Memo App</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- PAGE 1: SECTION MASTER -->
+    <div class="page active" id="page-sections">
+      <div class="page-header">
+        <h2>📍 Section Master</h2>
+        <p>Section ka naam do (jaise "GWL-GUNA Section"). Stations "Add Section" page se jode jaate hain.</p>
+      </div>
+      <div class="card">
+        <label>Section Name</label>
+        <input type="text" id="secName" placeholder="e.g. GWL-GUNA Section">
+        <button onclick="addSection()">➕ Add Section</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Saved Sections</div>
+        <table class="list" id="sectionTable">
+          <thead><tr><th>Section</th><th>Stations</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-msg" id="sectionEmpty">Koi section add nahi hua abhi.</div>
+      </div>
+    </div>
+
+    <!-- PAGE 1b: ADD SECTION STATIONS -->
+    <div class="page" id="page-addsection">
+      <div class="page-header">
+        <h2>🚉 Add Section (Stations)</h2>
+        <p>Section choose karo, phir uski station chain (From → To) banao.</p>
+      </div>
+      <div class="card">
+        <label>Section Select Karo</label>
+        <select id="asSectionSelect" onchange="onAddSectionSelect()"><option value="">-- Select Section --</option></select>
+        <div class="hint" id="asSectionHint">Pehle "Section Master" me ek section bana lo, fir yahan select karo.</div>
+
+        <div id="asFormBox" style="display:none;">
+          <div class="row" style="margin-top:14px;">
+            <div>
+              <label>From Station</label>
+              <input type="text" id="asFrom" placeholder="e.g. GWL" style="text-transform:uppercase;">
+            </div>
+            <div>
+              <label>To Station</label>
+              <input type="text" id="asTo" placeholder="e.g. PNHR" style="text-transform:uppercase;">
+            </div>
+          </div>
+          <button onclick="addStationToSection()">➕ Add Station Entry</button>
+
+          <div style="margin-top:18px;">
+            <div class="card-title" style="margin-bottom:6px;">🔗 Stations Chain</div>
+            <table class="list" id="asStationTable">
+              <thead><tr><th>From</th><th>To</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="empty-msg" id="asStationEmpty">Abhi koi station entry nahi hai.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2: TRAIN MASTER -->
+    <div class="page" id="page-trains">
+      <div class="page-header">
+        <h2>🚆 Train Master</h2>
+        <p>Train ka WTT time, gain values aur sections set karo.</p>
+      </div>
+      <div class="card">
+        <label>Train No.</label>
+        <input type="text" id="trainNo" placeholder="e.g. 51884" inputmode="numeric">
+        <div class="row">
+          <div>
+            <label>WTT Dep Time</label>
+            <input type="time" id="trainWttDep">
+          </div>
+          <div>
+            <label>WTT Arr Time</label>
+            <input type="time" id="trainWttArr">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Traffic Gain (min)</label>
+            <input type="number" id="trainTraffic" placeholder="e.g. 5" inputmode="numeric">
+          </div>
+          <div>
+            <label>Engg Gain (min)</label>
+            <input type="number" id="trainEngg" placeholder="e.g. 3" inputmode="numeric">
+          </div>
+        </div>
+        <label>Is train ke sections</label>
+        <div id="trainSectionChecks" class="hint">Pehle Section Master me sections add karo.</div>
+        <button onclick="addTrain()">💾 Save Train</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Saved Trains</div>
+        <table class="list" id="trainTable">
+          <thead><tr><th>Train</th><th>Dep/Arr</th><th>Gain</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty-msg" id="trainEmpty">Koi train add nahi hui abhi.</div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: REMARK MAPPING -->
+    <div class="page" id="page-mapping">
+      <div class="page-header">
+        <h2>🏷️ Remark → Category</h2>
+        <p>Remark code (jaise LC, C/D, BP Test) ki category set karo — Memo Generator me yehi list auto-suggest hogi.</p>
+      </div>
+      <div class="card">
+        <div id="mappingList"></div>
+        <div class="mapping-row">
+          <input type="text" id="mapRemark" placeholder="Remark code e.g. LC">
+          <select id="mapCategory"></select>
+          <button class="small" style="margin-top:0;" onclick="addMapping()">➕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: MEMO GENERATOR -->
+    <div class="page" id="page-memo">
+      <div class="page-header">
+        <h2>🧾 Memo Generator</h2>
+        <p>Train select karo, detention entries bharo — remark type karte hi list se auto-fill ho jayega.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">1️⃣ Entry Mode</div>
+        <div class="chip-row">
+          <div class="checkrow">
+            <input type="radio" name="memoMode" id="modeManual" value="manual" checked onchange="onMemoModeChange()">
+            <label for="modeManual" style="margin:0;font-weight:600;color:var(--text);">✍️ Manual</label>
+          </div>
+          <div class="checkrow">
+            <input type="radio" name="memoMode" id="modeCsv" value="csv" onchange="onMemoModeChange()">
+            <label for="modeCsv" style="margin:0;font-weight:600;color:var(--text);">📋 CSV Paste</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">2️⃣ Select Train</div>
+        <select id="memoTrainSelect" onchange="onTrainSelect()"><option value="">-- Select --</option></select>
+        <div class="hint" id="trainAutoInfo"></div>
+      </div>
+
+      <!-- CSV MODE -->
+      <div class="card" id="csvModeBox" style="display:none;">
+        <div class="card-title">3️⃣ Paste Combined Data</div>
+        <button class="secondary" onclick="copyPrompt()">🤖 Copy AI Prompt</button>
+        <div class="hint">Ye prompt copy karke ChatGPT/Claude me apna raw memo message/photo ke saath paste karo — wo tumhe neeche wala format bana ke dega.</div>
+
+        <label style="margin-top:16px;">Combined Data</label>
+        <textarea id="memoCsv" rows="12" placeholder="Date:15/09/2026
+Load:09=18
+SLR:02
+DR:Nil
+Loco:Nil
+OSR:Nil
+TM:Nil
+Station:GUNA
+ActualDep:07:50
+ActualArr:13:06
+Mobile:9109183768
+TmTag:Guna - TM
+MiscGain:0
+LocoGain:0
+---
+1,GWL-PNHR,BP Test
+3,GWL-PNHR,C/D
+24,PNHR-STN,LC"></textarea>
+        <div class="hint">Header block (key:value) — ek line <code>---</code> — phir Loss,Section,Remark rows.</div>
+
+        <button onclick="generateMemoFromCsv()">✨ Generate Memo</button>
+      </div>
+
+      <!-- MANUAL MODE -->
+      <div class="card" id="manualModeBox">
+        <div class="card-title">3️⃣ Memo Header Details</div>
+        <div class="row">
+          <div><label>Date</label><input type="text" id="mDate" placeholder="15/09/2026" inputmode="numeric"></div>
+          <div><label>Load</label><input type="text" id="mLoad" placeholder="09=18"></div>
+        </div>
+        <div class="row">
+          <div><label>SLR</label><input type="text" id="mSlr" placeholder="Nil"></div>
+          <div><label>DR</label><input type="text" id="mDr" placeholder="Nil"></div>
+        </div>
+        <div class="row">
+          <div><label>Loco</label><input type="text" id="mLoco" placeholder="Nil"></div>
+          <div><label>OSR</label><input type="text" id="mOsr" placeholder="Nil"></div>
+        </div>
+        <div class="row">
+          <div><label>TM</label><input type="text" id="mTm" placeholder="Nil"></div>
+          <div><label>Station</label><input type="text" id="mStation" placeholder="GUNA"></div>
+        </div>
+        <div class="row">
+          <div><label>Actual Dep</label><input type="time" id="mActDep"></div>
+          <div><label>Actual Arr</label><input type="time" id="mActArr"></div>
+        </div>
+        <div class="row">
+          <div><label>Mobile</label><input type="text" id="mMobile" placeholder="9109183768" inputmode="tel"></div>
+          <div><label>TM Tag</label><input type="text" id="mTmTag" placeholder="Guna - TM"></div>
+        </div>
+        <div class="row">
+          <div><label>Misc Gain (min)</label><input type="number" id="mMiscGain" placeholder="0" inputmode="numeric"></div>
+          <div><label>Loco Gain (min)</label><input type="number" id="mLocoGain" placeholder="0" inputmode="numeric"></div>
+        </div>
+      </div>
+
+      <div class="card" id="manualDetentionCard">
+        <div class="card-title">4️⃣ Detention Entries</div>
+        <label style="margin-top:0;">Section Select Karo</label>
+        <select id="mSectionSelect" onchange="onManualSectionSelect()"><option value="">-- Select Section --</option></select>
+        <div class="hint" id="mSectionHint">Section select karte hi uske stations niche aa jayenge — remark type karte hi auto-suggest list dikhegi.</div>
+
+        <div id="manualDetentionList"></div>
+      </div>
+
+      <button onclick="generateMemoFromManual()" id="manualGenerateBtn">✨ Generate Memo</button>
+
+      <div id="memoOutput"></div>
+    </div>
+
+  </div>
+
+  <div class="bottomnav" id="bottomNav">
+    <button class="nav-item active" data-page="sections" data-title="Section Master">
+      <span class="nav-ico">📍</span><span>Sections</span>
+    </button>
+    <button class="nav-item" data-page="addsection" data-title="Add Section (Stations)">
+      <span class="nav-ico">🚉</span><span>Stations</span>
+    </button>
+    <button class="nav-item" data-page="trains" data-title="Train Master">
+      <span class="nav-ico">🚆</span><span>Trains</span>
+    </button>
+    <button class="nav-item" data-page="mapping" data-title="Remark Mapping">
+      <span class="nav-ico">🏷️</span><span>Remarks</span>
+    </button>
+    <button class="nav-item" data-page="memo" data-title="Memo Generator">
+      <span class="nav-ico">🧾</span><span>Memo</span>
+    </button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- STATE (persisted to localStorage so data survives page reload) ----------
+const STORAGE_KEY = 'detentionMemoAppData_v1';
+const RECENT_KEY = 'detentionMemoRecentRemarks_v1';
+
+const DEFAULT_MAPPING = [
+  // ---- 1. Traffic (T) ----
+  {remark:'LC', category:'T'},
+  {remark:'S/O/App.', category:'T'},
+  {remark:'St/O/App.', category:'T'},
+  {remark:'Adv/O/App.', category:'T'},
+  {remark:'IBS/O/App.', category:'T'},
+  {remark:'Gate/S/O/App.', category:'T'},
+  {remark:'Auto/S/O/App.', category:'T'},
+  {remark:'C-ON Received', category:'T'},
+  {remark:'Authority Rec.', category:'T'},
+  {remark:'O/S/H', category:'T'},
+  {remark:'O/S/IBS', category:'T'},
+  {remark:'O/S/Auto/S', category:'T'},
+  {remark:'X-ing', category:'T'},
+  {remark:'X-over move.', category:'T'},
+  {remark:'Double X-over', category:'T'},
+  {remark:'Yard X-over', category:'T'},
+  {remark:'Emergency X-over', category:'T'},
+  {remark:'Prec.TN', category:'T'},
+  {remark:'Loop line Pass.', category:'T'},
+  {remark:'PLC', category:'T'},
+  {remark:'C/order issue', category:'T'},
+  {remark:'SPR staff Detrain', category:'T'},
+  {remark:'SPR staff Intrain', category:'T'},
+  {remark:'For SPR staff', category:'T'},
+  {remark:'Change Pt', category:'T'},
+  {remark:'NI work', category:'T'},
+  {remark:'Shunting Loco', category:'T'},
+  {remark:'H/O', category:'T'},
+  {remark:'APP', category:'T'},
+
+  // ---- 2. Engg (E) ----
+  {remark:'C/D', category:'E'},
+  {remark:'Track Jerk', category:'E'},
+  {remark:'Track Fracture', category:'E'},
+  {remark:'Track Buckling', category:'E'},
+  {remark:'Engg. Gate/S/Defective', category:'E'},
+  {remark:'Engg. Gate Defective', category:'E'},
+  {remark:'Gate Sig/O/A /Engg', category:'E'},
+  {remark:'O/S/Gate sig/Engg.', category:'E'},
+  {remark:'Engg. Block', category:'E'},
+  {remark:'Banner Flag', category:'E'},
+
+  // ---- 3. Loco ----
+  {remark:'Late Start by LP', category:'Loco'},
+  {remark:'Loco loss below section speed', category:'Loco'},
+  {remark:'Goods loco loss', category:'Loco'},
+  {remark:'Wheel Slip', category:'Loco'},
+  {remark:'BP Test', category:'Loco'},
+  {remark:'Auto BP Pressure drop', category:'Loco'},
+  {remark:'Auto FP Pressure drop', category:'Loco'},
+  {remark:'Dead Loco attachment', category:'Loco'},
+  {remark:'Loco Fail', category:'Loco'},
+
+  // ---- 4. ACP ----
+  {remark:'ACP by Unauthorized', category:'ACP'},
+  {remark:'ACP by By pass. Emergency', category:'ACP'},
+  {remark:'ACP for Medical Emergency', category:'ACP'},
+  {remark:'ACP for break binding', category:'ACP'},
+  {remark:'ACP for Hot Axle', category:'ACP'},
+
+  // ---- 5. C&W ----
+  {remark:'Brake Binding', category:'C&W'},
+  {remark:'Hosepipe Disconnection', category:'C&W'},
+  {remark:'Hot Axle', category:'C&W'},
+  {remark:'C&W Danger board', category:'C&W'},
+  {remark:'Watering', category:'C&W'},
+  {remark:'Defective Coach Detachment', category:'C&W'},
+  {remark:'Sick Coach Detachment', category:'C&W'},
+  {remark:'LHB Rake with ICF coach Attachment', category:'C&W'},
+  {remark:'Single Pipe Loss', category:'C&W'},
+  {remark:'FIBA operate', category:'C&W'},
+  {remark:'FSD Operate', category:'C&W'},
+
+  // ---- 6. S&T ----
+  {remark:'Signal failure', category:'S&T'},
+  {remark:'Point Failure', category:'S&T'},
+  {remark:'Block Failure', category:'S&T'},
+
+  // ---- 7. Commercial (Com) ----
+  {remark:'Loading', category:'Com'},
+  {remark:'Unloading', category:'Com'},
+  {remark:'Parcel', category:'Com'},
+  {remark:'VPH', category:'Com'},
+  {remark:'En-route Luggage Seal broken', category:'Com'},
+  {remark:'resealing Next STN', category:'Com'},
+  {remark:'Ticket Checking', category:'Com'},
+  {remark:'Unscheduled Commercial Halt', category:'Com'},
+
+  // ---- 8. Misc ----
+  {remark:'CRP avoid', category:'Misc'},
+  {remark:'CRO', category:'Misc'},
+  {remark:'MRO', category:'Misc'},
+  {remark:'Heavy Rain', category:'Misc'},
+  {remark:'Waterlogging', category:'Misc'},
+  {remark:'low visibility', category:'Misc'},
+  {remark:'Foggy Weather', category:'Misc'},
+  {remark:'Reduced speed', category:'Misc'},
+  {remark:'detonators', category:'Misc'},
+  {remark:'For Ladies pass.', category:'Misc'},
+  {remark:'Medical Emergency', category:'Misc'},
+  {remark:'Law and Order', category:'Misc'},
+  {remark:'Passenger Agitation', category:'Misc'},
+  {remark:'Public demonstrations', category:'Misc'},
+  {remark:'rail roko protests', category:'Misc'},
+  {remark:'unruly passenger behavior', category:'Misc'},
+  {remark:'Pass. Dispute', category:'Misc'},
+  {remark:'Ambush Check', category:'Misc'},
+  {remark:'Spot inspection', category:'Misc'},
+  {remark:'Stop TN to give a Memo', category:'Misc'},
+  {remark:'Water overflow Rail Track', category:'Misc'},
+
+  // ---- 9. OHE ----
+  {remark:'OHE Trip', category:'OHE'},
+  {remark:'OHE low voltage', category:'OHE'}
+];
+
+// Merge any new default remarks into an existing mapping list without duplicating
+// or overwriting anything the user already edited/added themselves.
+function ensureDefaultMappings(existing){
+  const list = existing ? existing.slice() : [];
+  DEFAULT_MAPPING.forEach(def=>{
+    const already = list.some(m=> m.remark.trim().toLowerCase() === def.remark.trim().toLowerCase());
+    if(!already) list.push(def);
+  });
+  return list;
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const data = JSON.parse(raw);
+      return {
+        sections: data.sections || [],
+        trains: data.trains || [],
+        mapping: ensureDefaultMappings(data.mapping)
+      };
+    }
+  }catch(e){ console.warn('Could not load saved data', e); }
+  return {
+    sections: [],
+    trains: [],
+    mapping: ensureDefaultMappings([])
+  };
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sections, trains, mapping }));
+  }catch(e){ console.warn('Could not save data', e); }
+}
+
+// Recently-used remarks per section-station (so the most relevant remark bubbles to
+// the top of suggestions / becomes the smart-default for that exact stretch next time).
+function loadRecent(){
+  try{
+    const raw = localStorage.getItem(RECENT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveRecent(){
+  try{ localStorage.setItem(RECENT_KEY, JSON.stringify(recentRemarks)); }catch(e){}
+}
+let recentRemarks = loadRecent(); // { "GWL-PNHR": ["BP Test","C/D",...] }
+function recordRecentRemark(sectionLabel, remark){
+  if(!remark) return;
+  const key = sectionLabel;
+  const arr = recentRemarks[key] || [];
+  const filtered = arr.filter(r=> r.toLowerCase() !== remark.toLowerCase());
+  filtered.unshift(remark);
+  recentRemarks[key] = filtered.slice(0, 6);
+  saveRecent();
+}
+
+const _initial = loadState();
+// sections: {id, name, stations:[{id, from, to}]}
+// Backward-compat: old data had {id, from, to, traffic, engg} with no name/stations.
+let sections = _initial.sections.map(s=>{
+  if(s.stations) return s; // already new format
+  return {
+    id: s.id,
+    name: (s.from && s.to) ? `${s.from}-${s.to}` : (s.name || 'Section'),
+    stations: (s.from && s.to) ? [{id: Date.now()+Math.random(), from:s.from, to:s.to}] : []
+  };
+});
+// trains: {trainNo, wttDep, wttArr, traffic, engg, sectionIds:[]}
+// Backward-compat: old trains had no traffic/engg of their own — those gains lived on
+// their selected sections. Migrate that sum onto the train once so no data is lost.
+let trains = (_initial.trains||[]).map(t=>{
+  if(t.traffic !== undefined || t.engg !== undefined) return t; // already migrated
+  let migTraffic = 0, migEngg = 0;
+  (t.sectionIds||[]).forEach(id=>{
+    const s = (_initial.sections||[]).find(x=>x.id===id);
+    if(s){ migTraffic += s.traffic || 0; migEngg += s.engg || 0; }
+  });
+  return { ...t, traffic: migTraffic, engg: migEngg };
+});
+let mapping = _initial.mapping;
+
+// ---------- TOAST ----------
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 1800);
+}
+
+// ---------- NAV (bottom tab bar) ----------
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('page-'+item.dataset.page).classList.add('active');
+    document.getElementById('topbarTitle').textContent = item.dataset.title;
+    document.querySelector('.content').scrollTo(0,0);
+    window.scrollTo(0,0);
+  });
+});
+
+// ---------- SECTION MASTER ----------
+function addSection(){
+  const name = document.getElementById('secName').value.trim();
+  if(!name){ showToast('Section ka naam bharo'); return; }
+  sections.push({id: Date.now(), name, stations: []});
+  saveState();
+  document.getElementById('secName').value='';
+  renderSections();
+  renderTrainSectionChecks();
+  renderAddSectionSelect();
+  showToast('Section add ho gaya ✓');
+}
+function deleteSection(id){
+  sections = sections.filter(s=>s.id!==id);
+  trains.forEach(t=> t.sectionIds = t.sectionIds.filter(sid=>sid!==id));
+  saveState();
+  renderSections(); renderTrains(); renderTrainSectionChecks(); renderAddSectionSelect();
+}
+function sectionStationChainLabel(s){
+  if(!s.stations || s.stations.length===0) return '<span class="hint" style="margin:0;">Koi station nahi</span>';
+  return s.stations.map(st=>`${st.from}-${st.to}`).join(', ');
+}
+function renderSections(){
+  const tbody = document.querySelector('#sectionTable tbody');
+  tbody.innerHTML='';
+  sections.forEach(s=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><b>${s.name}</b></td><td style="font-size:11.5px;">${sectionStationChainLabel(s)}</td>
+      <td><span class="del-btn" onclick="deleteSection(${s.id})">✕</span></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('sectionEmpty').style.display = sections.length ? 'none':'block';
+  document.getElementById('sectionTable').style.display = sections.length ? 'table':'none';
+}
+
+// ---------- ADD SECTION (STATIONS) ----------
+function renderAddSectionSelect(){
+  const sel = document.getElementById('asSectionSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- Select Section --</option>' + sections.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  if(sections.some(s=>String(s.id)===prev)) sel.value = prev;
+  onAddSectionSelect();
+}
+function onAddSectionSelect(){
+  const id = document.getElementById('asSectionSelect').value;
+  const box = document.getElementById('asFormBox');
+  const hint = document.getElementById('asSectionHint');
+  if(!id){
+    box.style.display='none';
+    hint.style.display = sections.length ? 'none' : 'block';
+    return;
+  }
+  box.style.display='block';
+  hint.style.display='none';
+  renderAddSectionStations();
+}
+function addStationToSection(){
+  const id = document.getElementById('asSectionSelect').value;
+  const s = sections.find(x=>String(x.id)===String(id));
+  if(!s){ showToast('Pehle section select karo'); return; }
+  const from = document.getElementById('asFrom').value.trim().toUpperCase();
+  const to = document.getElementById('asTo').value.trim().toUpperCase();
+  if(!from || !to){ showToast('From aur To station dono bharo'); return; }
+  s.stations.push({id: Date.now()+Math.random(), from, to});
+  saveState();
+  document.getElementById('asFrom').value='';
+  document.getElementById('asTo').value='';
+  renderAddSectionStations();
+  renderSections();
+  showToast('Station add ho gaya ✓');
+}
+function deleteStationFromSection(stId){
+  const id = document.getElementById('asSectionSelect').value;
+  const s = sections.find(x=>String(x.id)===String(id));
+  if(!s) return;
+  s.stations = s.stations.filter(st=>st.id!==stId);
+  saveState();
+  renderAddSectionStations();
+  renderSections();
+}
+function renderAddSectionStations(){
+  const id = document.getElementById('asSectionSelect').value;
+  const s = sections.find(x=>String(x.id)===String(id));
+  const tbody = document.querySelector('#asStationTable tbody');
+  tbody.innerHTML='';
+  if(!s){ document.getElementById('asStationEmpty').style.display='block'; document.getElementById('asStationTable').style.display='none'; return; }
+  s.stations.forEach(st=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><b>${st.from}</b></td><td><b>${st.to}</b></td>
+      <td><span class="del-btn" onclick="deleteStationFromSection(${st.id})">✕</span></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('asStationEmpty').style.display = s.stations.length ? 'none':'block';
+  document.getElementById('asStationTable').style.display = s.stations.length ? 'table':'none';
+}
+
+// Returns unique ordered list of station names that appear in a section's chain,
+// e.g. stations [{GWL,PNHR},{PNHR,STN}] -> ['GWL','PNHR','STN']
+function sectionStationNames(s){
+  const names = [];
+  (s.stations||[]).forEach(st=>{
+    if(!names.includes(st.from)) names.push(st.from);
+    if(!names.includes(st.to)) names.push(st.to);
+  });
+  return names;
+}
+
+// ---------- TRAIN MASTER ----------
+function renderTrainSectionChecks(){
+  const box = document.getElementById('trainSectionChecks');
+  if(sections.length===0){ box.innerHTML = 'Pehle Section Master me sections add karo.'; return; }
+  box.innerHTML = sections.map(s=>`
+    <div class="checkrow">
+      <input type="checkbox" value="${s.id}" id="chk_${s.id}">
+      <label for="chk_${s.id}" style="margin:0;font-weight:500;">${s.name}</label>
+    </div>`).join('');
+}
+function addTrain(){
+  const trainNo = document.getElementById('trainNo').value.trim();
+  const wttDep = document.getElementById('trainWttDep').value;
+  const wttArr = document.getElementById('trainWttArr').value;
+  const traffic = parseFloat(document.getElementById('trainTraffic').value) || 0;
+  const engg = parseFloat(document.getElementById('trainEngg').value) || 0;
+  if(!trainNo || !wttDep || !wttArr){ showToast('Train No, WTT Dep aur WTT Arr sab bharo'); return; }
+  const sectionIds = sections.filter(s=> document.getElementById('chk_'+s.id) && document.getElementById('chk_'+s.id).checked).map(s=>s.id);
+  trains.push({trainNo, wttDep, wttArr, traffic, engg, sectionIds});
+  saveState();
+  document.getElementById('trainNo').value='';
+  document.getElementById('trainWttDep').value='';
+  document.getElementById('trainWttArr').value='';
+  document.getElementById('trainTraffic').value='';
+  document.getElementById('trainEngg').value='';
+  renderTrainSectionChecks();
+  renderTrains();
+  renderMemoTrainSelect();
+  showToast('Train save ho gayi ✓');
+}
+function deleteTrain(trainNo){
+  trains = trains.filter(t=>t.trainNo!==trainNo);
+  saveState();
+  renderTrains(); renderMemoTrainSelect();
+}
+function renderTrains(){
+  const tbody = document.querySelector('#trainTable tbody');
+  tbody.innerHTML='';
+  trains.forEach(t=>{
+    const secNames = t.sectionIds.map(id=>{
+      const s = sections.find(x=>x.id===id);
+      return s ? s.name : '';
+    }).filter(Boolean).join(', ');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><b>${t.trainNo}</b><div style="font-size:10.5px;color:var(--muted);">${secNames||'-'}</div></td>
+      <td style="font-size:11.5px;">${t.wttDep}<br>${t.wttArr}</td>
+      <td style="font-size:11.5px;">T:${t.traffic||0}<br>E:${t.engg||0}</td>
+      <td><span class="del-btn" onclick="deleteTrain('${t.trainNo}')">✕</span></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('trainEmpty').style.display = trains.length ? 'none':'block';
+  document.getElementById('trainTable').style.display = trains.length ? 'table':'none';
+}
+
+// ---------- REMARK MAPPING ----------
+// Full ordered list of categories the app understands. "SG" (Section Gain/unmapped)
+// is handled separately and always shown, so it's excluded here.
+const ALL_CATEGORIES = [
+  {key:'T', label:'T'},
+  {key:'E', label:'E'},
+  {key:'Loco', label:'Loco'},
+  {key:'ACP', label:'ACP'},
+  {key:'C&W', label:'C&W'},
+  {key:'S&T', label:'S&T'},
+  {key:'Com', label:'Com'},
+  {key:'OHE', label:'OHE'},
+  {key:'Misc', label:'Misc'}
+];
+function categoryOptionsHtml(selected){
+  return ALL_CATEGORIES.map(c=>`<option value="${c.key}" ${c.key===selected?'selected':''}>${c.label}</option>`).join('');
+}
+
+function renderMapping(){
+  const box = document.getElementById('mappingList');
+  box.innerHTML = mapping.map((m,i)=>`
+    <div class="mapping-row">
+      <input type="text" value="${m.remark}" onchange="updateMapping(${i},'remark',this.value)">
+      <select onchange="updateMapping(${i},'category',this.value)">
+        ${categoryOptionsHtml(m.category)}
+      </select>
+      <span class="del-btn" onclick="deleteMapping(${i})">✕</span>
+    </div>`).join('');
+}
+function addMapping(){
+  const remark = document.getElementById('mapRemark').value.trim();
+  const category = document.getElementById('mapCategory').value;
+  if(!remark){ showToast('Remark code likho'); return; }
+  mapping.push({remark, category});
+  saveState();
+  document.getElementById('mapRemark').value='';
+  renderMapping();
+  showToast('Remark add ho gaya ✓');
+}
+function updateMapping(i, field, value){ mapping[i][field]=value; saveState(); }
+function deleteMapping(i){ mapping.splice(i,1); saveState(); renderMapping(); }
+
+// ---------- MEMO GENERATOR ----------
+function renderMemoTrainSelect(){
+  const sel = document.getElementById('memoTrainSelect');
+  sel.innerHTML = '<option value="">-- Select --</option>' + trains.map(t=>`<option value="${t.trainNo}">${t.trainNo}</option>`).join('');
+}
+function onTrainSelect(){
+  const trainNo = document.getElementById('memoTrainSelect').value;
+  const t = trains.find(x=>x.trainNo===trainNo);
+  const info = document.getElementById('trainAutoInfo');
+  if(!t){ info.innerHTML=''; return; }
+  const secNames = t.sectionIds.map(id=>{
+    const s = sections.find(x=>x.id===id);
+    return s ? s.name : '';
+  }).filter(Boolean).join(', ');
+  info.innerHTML = `✓ Auto-fetched — WTT Dep: <b>${t.wttDep}</b>, WTT Arr: <b>${t.wttArr}</b><br>Sections: <b>${secNames||'-'}</b>`;
+}
+
+function copyPrompt(){
+  const knownRemarksList = mapping.map(m=>`- "${m.remark}"`).join('\n');
+  const promptText =
+`Neeche diya gaya Railway detention memo ka raw data (message ya photo se) is EXACT format mein convert karke do — sirf ye format wapas do, koi extra text/explanation mat likhna:
+
+Date:DD/MM/YYYY
+Load:value
+SLR:value
+DR:value
+Loco:value
+OSR:value
+TM:value
+Station:value
+ActualDep:HH:MM
+ActualArr:HH:MM
+Mobile:number
+TmTag:station name - TM
+MiscGain:number (agar na pata ho to 0)
+LocoGain:number (agar na pata ho to 0)
+---
+Loss,Section,Remark
+Loss,Section,Remark
+(is tarah har detention entry ek line mein, comma se separate)
+
+Important: system ke pehle se yeh remark codes defined hain, agar raw data me inse milta-julta kuch mile to EXACTLY yehi likhna (case match nahi bhi hua to bhi yehi spelling use karo):
+${knownRemarksList}
+Agar koi naya remark code raw data me mile jo upar list me nahi hai, to jo bhi short code raw data me diya gaya hai wahi likh dena.
+
+Mera raw data yeh hai:
+[YAHAN APNA RAW MEMO MESSAGE YA PHOTO KA TEXT PASTE KARO]`;
+
+  showCopyBox(promptText);
+
+  // try automatic copy in background, but the box above is the reliable path
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(promptText).catch(()=>{});
+  }
+}
+
+function showCopyBox(text){
+  let box = document.getElementById('copyBoxOverlay');
+  if(box) box.remove();
+
+  box = document.createElement('div');
+  box.id = 'copyBoxOverlay';
+  box.className = 'overlay-modal';
+  box.innerHTML = `
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <strong style="color:#8B0000;margin-bottom:8px;display:block;">Prompt ready — text select hai</strong>
+      <div style="font-size:12px;color:#7a6e68;margin-bottom:8px;">Auto-copy kaam nahi kiya to koi baat nahi — neeche box me text already select hai, bas <b>Ctrl+C</b> dabao (mobile pe: text ko tap karke hold karo → Copy).</div>
+      <textarea id="copyBoxText" readonly style="flex:1;min-height:220px;font-family:Consolas,monospace;font-size:12px;padding:10px;border:1.5px solid #e2d4d4;border-radius:10px;"></textarea>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button onclick="tryCopyAgain()" style="margin-top:0;">📋 Copy Try Karo</button>
+        <button class="secondary" style="margin-top:0;" onclick="document.getElementById('copyBoxOverlay').remove()">Band Karo</button>
+      </div>
+    </div>`;
+  document.body.appendChild(box);
+
+  const ta = document.getElementById('copyBoxText');
+  ta.value = text;
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+}
+
+function tryCopyAgain(){
+  const ta = document.getElementById('copyBoxText');
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
+  let ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+  if(ok){
+    showToast('Copy ho gaya!');
+  } else {
+    showToast('Manual copy karo: Ctrl+C ya long-press → Copy');
+  }
+}
+
+function timeToMin(t){
+  if(!t) return null;
+  const [h,m] = t.split(':').map(Number);
+  return h*60+m;
+}
+function diffLabel(wtt, actual, lateWord){
+  if(!wtt || !actual) return '-';
+  const d = timeToMin(actual) - timeToMin(wtt);
+  if(d===0) return 'Right Time';
+  if(d>0) return `${d} Min Late`;
+  return `${Math.abs(d)} Min Early`;
+}
+function timeDiffMinutes(wtt, actual){
+  if(!wtt || !actual) return null;
+  return timeToMin(actual) - timeToMin(wtt); // positive = late, negative = early, 0 = right time
+}
+
+function categorize(remark){
+  const found = mapping.find(m=> m.remark.trim().toLowerCase() === remark.trim().toLowerCase());
+  // Agar remark kisi mapping me match nahi hota (T/E/Misc me se koi nahi), to wo automatically S/G me chala jata hai.
+  return found ? found.category : 'SG';
+}
+
+// ---------- MEMO MODE TOGGLE ----------
+function onMemoModeChange(){
+  const isManual = document.getElementById('modeManual').checked;
+  document.getElementById('csvModeBox').style.display = isManual ? 'none' : 'block';
+  document.getElementById('manualModeBox').style.display = isManual ? 'block' : 'none';
+  document.getElementById('manualDetentionCard').style.display = isManual ? 'block' : 'none';
+  document.getElementById('manualGenerateBtn').style.display = isManual ? 'flex' : 'none';
+  if(isManual) renderManualSectionSelect();
+}
+
+// Auto-formats a detention time input as the user types: as soon as 2 digits for HH
+// are typed, ":" is inserted automatically so the user can continue typing MM,
+// e.g. typing "1","2" -> "12:" then "3","0" -> "12:30". A colon typed by the user
+// (or a single-digit HH followed by ':') is respected as-is.
+function formatTimeInput(inputEl){
+  const raw = inputEl.value;
+  const colonIdx = raw.indexOf(':');
+  if(colonIdx !== -1){
+    const hh = raw.slice(0, colonIdx).replace(/[^0-9]/g,'').slice(0,2);
+    const mm = raw.slice(colonIdx+1).replace(/[^0-9]/g,'').slice(0,2);
+    inputEl.value = `${hh}:${mm}`;
+    return;
+  }
+  const digits = raw.replace(/[^0-9]/g,'').slice(0,2);
+  inputEl.value = digits.length===2 ? `${digits}:` : digits;
+  const detEntry = inputEl.closest('.det-entry');
+  if(detEntry) detEntry.classList.toggle('has-value', !!inputEl.value);
+}
+
+function renderManualSectionSelect(){
+  const sel = document.getElementById('mSectionSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- Select Section --</option>' + sections.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  if(sections.some(s=>String(s.id)===prev)) sel.value = prev;
+}
+
+// These remarks always appear first in the dropdown/suggestions, in this exact order;
+// everything else follows below them in the order they exist in the mapping list.
+const PRIORITY_REMARKS = ['LC', 'C/D', 'Loco loss below section speed', 'CRO', 'S/O/App.'];
+
+function orderedMappingList(){
+  const norm = s => s.trim().toLowerCase();
+  const priority = [];
+  PRIORITY_REMARKS.forEach(pr=>{
+    const found = mapping.find(m=> norm(m.remark) === norm(pr));
+    if(found) priority.push(found);
+  });
+  const rest = mapping.filter(m=> !PRIORITY_REMARKS.some(pr=> norm(pr)===norm(m.remark)));
+  return [...priority, ...rest];
+}
+
+// Suggest list for a given section stretch: recently-used remarks for THIS exact
+// stretch come first (smart auto-fill memory), then the full known-remark list,
+// filtered by whatever the user has typed so far.
+function getSuggestions(sectionLabel, query){
+  const q = (query||'').trim().toLowerCase();
+  const recent = recentRemarks[sectionLabel] || [];
+  const all = orderedMappingList().map(m=>m.remark);
+  const seen = new Set();
+  const combined = [];
+  recent.forEach(r=>{ if(!seen.has(r.toLowerCase())){ seen.add(r.toLowerCase()); combined.push({remark:r, recent:true}); } });
+  all.forEach(r=>{ if(!seen.has(r.toLowerCase())){ seen.add(r.toLowerCase()); combined.push({remark:r, recent:false}); } });
+  if(!q) return combined.slice(0, 8);
+  return combined.filter(c=> c.remark.toLowerCase().includes(q)).slice(0, 8);
+}
+
+function categoryOf(remark){
+  const found = mapping.find(m=> m.remark.trim().toLowerCase() === remark.trim().toLowerCase());
+  return found ? found.category : null;
+}
+
+// ---------- Manual Detention Entry rendering (auto-fill remark cards) ----------
+function onManualSectionSelect(){
+  const id = document.getElementById('mSectionSelect').value;
+  const list = document.getElementById('manualDetentionList');
+  const hint = document.getElementById('mSectionHint');
+  list.innerHTML = '';
+  const s = sections.find(x=>String(x.id)===String(id));
+  if(!s || !s.stations || s.stations.length===0){
+    hint.style.display='block';
+    return;
+  }
+  hint.style.display='none';
+  s.stations.forEach((st, idx)=>{
+    const sectionLabel = `${st.from}-${st.to}`;
+    // Smart default: if this exact stretch has a recently-used remark, pre-fill it.
+    const recent = recentRemarks[sectionLabel] || [];
+    const defaultRemark = recent[0] || '';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'det-entry';
+    wrap.dataset.section = sectionLabel;
+    wrap.innerHTML = `
+      <div class="det-section-label">🚉 ${st.from} → ${st.to}</div>
+      <div class="det-fields">
+        <input type="text" class="mDetTime" placeholder="HH:MM" inputmode="numeric" maxlength="5" oninput="formatTimeInput(this)">
+        <div class="remark-field">
+          <input type="text" class="mDetRemark" placeholder="Remark type karo..." value="${defaultRemark}"
+            oninput="onRemarkInput(this)" onfocus="onRemarkFocus(this)" onkeydown="onRemarkKeydown(event,this)">
+          <span class="clear-x" onclick="clearRemarkField(this)" style="display:${defaultRemark?'flex':'none'};">✕</span>
+          <div class="remark-suggestions"></div>
+        </div>
+      </div>
+      <div class="quick-chips"></div>
+    `;
+    list.appendChild(wrap);
+    renderQuickChips(wrap, sectionLabel);
+  });
+}
+
+// Small quick-tap chips under each entry: top 3 recent/likely remarks for one-tap fill.
+function renderQuickChips(wrap, sectionLabel){
+  const chipBox = wrap.querySelector('.quick-chips');
+  const suggestions = getSuggestions(sectionLabel, '').slice(0, 4);
+  chipBox.innerHTML = suggestions.map(s=>
+    `<span class="quick-chip" onclick="selectRemarkFor(this, '${s.remark.replace(/'/g,"\\'")}')">${s.remark}${s.recent ? ' ⭐' : ''}</span>`
+  ).join('');
+}
+
+function selectRemarkFor(chipEl, remark){
+  const wrap = chipEl.closest('.det-entry');
+  const input = wrap.querySelector('.mDetRemark');
+  input.value = remark;
+  wrap.querySelector('.clear-x').style.display = 'flex';
+  hideSuggestionsFor(input);
+  input.focus();
+}
+
+function clearRemarkField(xEl){
+  const field = xEl.closest('.remark-field');
+  const input = field.querySelector('.mDetRemark');
+  input.value = '';
+  xEl.style.display = 'none';
+  input.focus();
+  onRemarkInput(input);
+}
+
+function onRemarkInput(input){
+  const field = input.closest('.remark-field');
+  field.querySelector('.clear-x').style.display = input.value ? 'flex' : 'none';
+  showSuggestionsFor(input);
+}
+function onRemarkFocus(input){
+  showSuggestionsFor(input);
+}
+function showSuggestionsFor(input){
+  const wrap = input.closest('.det-entry');
+  const sectionLabel = wrap.dataset.section;
+  const box = wrap.querySelector('.remark-suggestions');
+  const suggestions = getSuggestions(sectionLabel, input.value);
+  if(suggestions.length===0){
+    box.innerHTML = `<div class="sug-empty">Naya remark — jo type kiya wahi save ho jayega ✓</div>`;
+  } else {
+    box.innerHTML = suggestions.map(s=>{
+      const cat = categoryOf(s.remark);
+      const badge = cat ? `<span class="badge ${cat.replace('&','\\&')}">${cat}</span>` : '';
+      return `<div class="sug-item" onmousedown="event.preventDefault();pickSuggestion(this,'${s.remark.replace(/'/g,"\\'")}')">
+        <span class="sug-text">${s.remark}${s.recent ? ' ⭐' : ''}</span>${badge}
+      </div>`;
+    }).join('');
+  }
+  box.classList.add('show');
+}
+function pickSuggestion(itemEl, remark){
+  const wrap = itemEl.closest('.det-entry');
+  const input = wrap.querySelector('.mDetRemark');
+  input.value = remark;
+  wrap.querySelector('.clear-x').style.display = 'flex';
+  hideSuggestionsFor(input);
+}
+function hideSuggestionsFor(input){
+  const wrap = input.closest('.det-entry');
+  const box = wrap.querySelector('.remark-suggestions');
+  box.classList.remove('show');
+}
+function onRemarkKeydown(e, input){
+  if(e.key === 'Enter'){ e.preventDefault(); hideSuggestionsFor(input); input.blur(); }
+  if(e.key === 'Escape'){ hideSuggestionsFor(input); }
+}
+// Close any open suggestion dropdown when tapping elsewhere on the page.
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.remark-field')){
+    document.querySelectorAll('.remark-suggestions.show').forEach(b=>b.classList.remove('show'));
+  }
+});
+
+function collectManualRows(){
+  const id = document.getElementById('mSectionSelect').value;
+  const s = sections.find(x=>String(x.id)===String(id));
+  if(!s){ return null; }
+  const entries = document.querySelectorAll('#manualDetentionList .det-entry');
+  const rows = [];
+  entries.forEach((wrap)=>{
+    const timeVal = wrap.querySelector('.mDetTime').value.trim();
+    const remark = wrap.querySelector('.mDetRemark').value.trim();
+    if(!timeVal) return; // skip stations with no detention entered
+    // Interpret HH:MM as duration (hours:minutes of detention), convert to total minutes
+    let lossMin;
+    const dur = timeVal.match(/^(\d{1,3}):([0-5]?\d)$/);
+    if(dur){ lossMin = parseInt(dur[1],10)*60 + parseInt(dur[2],10); }
+    else { lossMin = parseFloat(timeVal) || 0; }
+    const sectionLabel = wrap.dataset.section;
+    if(remark) recordRecentRemark(sectionLabel, remark);
+    rows.push({ loss: lossMin, section: sectionLabel, remark: remark || '-' });
+  });
+  return rows;
+}
+
+function generateMemoFromManual(){
+  const trainNo = document.getElementById('memoTrainSelect').value;
+  const t = trains.find(x=>x.trainNo===trainNo);
+  if(!t){ showToast('Pehle ek Train select karo'); return; }
+
+  const rows = collectManualRows();
+  if(rows === null){ showToast('Pehle Detention section select karo'); return; }
+  if(rows.length === 0){ showToast('Kam se kam ek station ke aage detention time bharo'); return; }
+
+  const header = {
+    date: document.getElementById('mDate').value.trim(),
+    load: document.getElementById('mLoad').value.trim(),
+    slr: document.getElementById('mSlr').value.trim(),
+    dr: document.getElementById('mDr').value.trim(),
+    loco: document.getElementById('mLoco').value.trim(),
+    osr: document.getElementById('mOsr').value.trim(),
+    tm: document.getElementById('mTm').value.trim(),
+    station: document.getElementById('mStation').value.trim(),
+    actualdep: document.getElementById('mActDep').value.trim(),
+    actualarr: document.getElementById('mActArr').value.trim(),
+    mobile: document.getElementById('mMobile').value.trim(),
+    tmtag: document.getElementById('mTmTag').value.trim(),
+    miscgain: document.getElementById('mMiscGain').value.trim(),
+    locogain: document.getElementById('mLocoGain').value.trim()
+  };
+
+  renderMemo(t, trainNo, header, rows);
+}
+
+function generateMemoFromCsv(){
+  const trainNo = document.getElementById('memoTrainSelect').value;
+  const t = trains.find(x=>x.trainNo===trainNo);
+  if(!t){ showToast('Pehle ek Train select karo'); return; }
+
+  const raw = document.getElementById('memoCsv').value.trim();
+  if(!raw){ showToast('Combined data (header + CSV) paste karo'); return; }
+
+  // Auto-detect: lines like "key:value" go to header, lines like "12,ABC-XYZ,Remark" go to loss rows.
+  // Works whether or not a --- separator line is present.
+  const header = {};
+  const rows = [];
+  raw.split('\n').forEach(lineRaw=>{
+    const line = lineRaw.trim();
+    if(!line || /^-{3,}$/.test(line)) return; // skip blank lines and any --- separator
+    const lossRowMatch = line.match(/^(-?\d+(?:\.\d+)?)\s*,\s*([^,]+)\s*,\s*(.+)$/);
+    const headerMatch = line.match(/^([A-Za-z]+)\s*:\s*(.*)$/);
+    if(lossRowMatch){
+      rows.push({ loss: parseFloat(lossRowMatch[1])||0, section: lossRowMatch[2].trim(), remark: lossRowMatch[3].trim() });
+    } else if(headerMatch){
+      header[headerMatch[1].trim().toLowerCase()] = headerMatch[2].trim();
+    }
+  });
+
+  if(rows.length === 0){ showToast('Koi detention row nahi mili — format check karo'); return; }
+
+  // Learn from CSV entries too, so manual mode benefits from CSV-entered data as well.
+  rows.forEach(r=>{ if(r.remark && r.remark !== '-') recordRecentRemark(r.section, r.remark); });
+
+  renderMemo(t, trainNo, header, rows);
+}
+
+function renderMemo(t, trainNo, header, rows){
+  const station = header['station'] || '-';
+  const date = header['date'] || '-';
+  const load = header['load'] || 'Nil';
+  const slr = header['slr'] || 'Nil';
+  const dr = header['dr'] || 'Nil';
+  const loco = header['loco'] || 'Nil';
+  const osr = header['osr'] || 'Nil';
+  const tm = header['tm'] || 'Nil';
+  const actDep = header['actualdep'] || '';
+  const actArr = header['actualarr'] || '';
+  const mobile = header['mobile'] || '-';
+  const tmTag = header['tmtag'] || '-';
+  const miscGainManual = parseFloat(header['miscgain']) || 0;
+  const locoGainManual = parseFloat(header['locogain']) || 0;
+  const overrideTotalGain = header['totalgain'];
+
+  const totalLoss = rows.reduce((sum,r)=>sum+r.loss,0);
+  const lossByCat = {}; // e.g. {T: 12, E: 5, ACP: 3, ...}
+  ALL_CATEGORIES.forEach(c=> lossByCat[c.key] = 0);
+  let lossSG = 0;
+  rows.forEach(r=>{
+    const cat = categorize(r.remark);
+    if(lossByCat.hasOwnProperty(cat)) lossByCat[cat] += r.loss;
+    else lossSG += r.loss; // remark kisi mapping me match nahi hua -> S/G
+  });
+
+  // Gain: Traffic + Engg allowances are now set directly on the Train (Train Master)
+  const gainByCat = {};
+  ALL_CATEGORIES.forEach(c=> gainByCat[c.key] = 0);
+  gainByCat['T'] += (t.traffic || 0);
+  gainByCat['E'] += (t.engg || 0);
+  gainByCat['Misc'] += miscGainManual;
+  gainByCat['Loco'] += locoGainManual;
+
+  // Total Gain = Total Loss - Net Arrival Delay (the gap between gross detention and the
+  // train's actual final outcome is time recovered somewhere -> reconciles to Total Gain).
+  const netArrDelay = timeDiffMinutes(t.wttArr, actArr); // positive = late, negative = early, 0 = right time
+  const sumKnownGains = ALL_CATEGORIES.reduce((s,c)=>s+gainByCat[c.key],0);
+  const autoTotalGain = (netArrDelay===null) ? sumKnownGains : (totalLoss - netArrDelay);
+  let totalGain = (overrideTotalGain !== undefined && overrideTotalGain !== '') ? parseFloat(overrideTotalGain) : autoTotalGain;
+
+  // S/G (Gain) = whatever recovery isn't explained by known category gains -> "Section Gain"
+  const gainSG = totalGain - sumKnownGains;
+
+  const rt = diffLabel(t.wttDep, actDep);
+  const la = diffLabel(t.wttArr, actArr);
+
+  const fmt = v => (v===0 ? '--' : v);
+
+  // Only show a category column in the memo if this memo actually has a gain or loss in it —
+  // categories with no activity (e.g. no ACP/C&W remarks used) are hidden entirely.
+  const activeCats = ALL_CATEGORIES.filter(c => gainByCat[c.key]!==0 || lossByCat[c.key]!==0);
+
+  const perfHeaderCells = activeCats.map(c=>`<th>${c.label}</th>`).join('') + '<th>S/G</th><th>Total</th>';
+  const gainCells = activeCats.map(c=>`<td>${fmt(gainByCat[c.key])}</td>`).join('') + `<td>${fmt(gainSG)}</td><td class="gain-total">${totalGain}</td>`;
+  const lossCells = activeCats.map(c=>`<td>${fmt(lossByCat[c.key])}</td>`).join('') + `<td>${fmt(lossSG)}</td><td class="loss-total">${totalLoss}</td>`;
+
+  const html = `
+    <div class="memo" id="memoCard">
+      <h3>Detention MEMO at ${station}</h3>
+      <hr>
+      <div class="grid2">
+        <div class="kv"><span class="k">TN :</span><span>${trainNo}</span></div>
+        <div class="kv"><span class="k">Date :</span><span>${date}</span></div>
+        <div class="kv"><span class="k">Load :</span><span>${load}</span></div>
+        <div class="kv"><span class="k">Loco :</span><span>${loco}</span></div>
+        <div class="kv"><span class="k">SLR :</span><span>${slr}</span></div>
+        <div class="kv"><span class="k">OSR :</span><span>${osr}</span></div>
+        <div class="kv"><span class="k">DR :</span><span>${dr}</span></div>
+        <div class="kv"><span class="k">TM :</span><span>${tm}</span></div>
+      </div>
+      <div class="divider-dashed"></div>
+      <div class="grid2" style="margin-bottom:16px;">
+        <div class="kv"><span class="k">Start Dep :</span><span>${actDep||'-'}</span></div>
+        <div class="kv"><span class="k">R/T :</span><span>${rt}</span></div>
+        <div class="kv"><span class="k">Arr :</span><span>${actArr||'-'}</span></div>
+        <div class="kv"><span class="k">L/A :</span><span>${la}</span></div>
+      </div>
+      <table>
+        <thead><tr><th style="width:15%;">Loss</th><th>Section</th><th>Remark</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`<tr><td>${r.loss}</td><td class="section-col">${r.section}</td><td class="remark-col">${r.remark}</td></tr>`).join('')}
+          <tr class="total-row"><td>${totalLoss}</td><td colspan="2">Total Detention Loss (in Minutes)</td></tr>
+        </tbody>
+      </table>
+      <div class="perf-title">Train Performance Summary (Gain / Loss)</div>
+      <table class="perf-table">
+        <thead><tr><th>Type</th>${perfHeaderCells}</tr></thead>
+        <tbody>
+          <tr><td style="text-align:left;color:#1a6b2f;font-weight:700;">Gain</td>${gainCells}</tr>
+          <tr><td style="text-align:left;color:#a33;font-weight:700;">Loss</td>${lossCells}</tr>
+        </tbody>
+      </table>
+      <div class="footer">mob : ${mobile} ( ${tmTag} )</div>
+    </div>
+    <div class="memo-actions">
+      <button onclick="downloadMemoImage()">⬇ Download</button>
+      <button class="secondary" onclick="shareMemoImage()">📤 Share</button>
+    </div>
+  `;
+  document.getElementById('memoOutput').innerHTML = html;
+  document.getElementById('memoOutput').scrollIntoView({behavior:'smooth', block:'start'});
+  showToast('Memo generate ho gaya ✓');
+}
+
+async function getMemoCanvas(){
+  const card = document.getElementById('memoCard');
+  if(!card){ showToast('Pehle memo generate karo'); return null; }
+  if(typeof html2canvas === 'undefined'){
+    showToast('Image library load nahi hui — internet check karo');
+    return null;
+  }
+
+  // On narrow (mobile) screens the on-page card is stretched to 100% width by the
+  // responsive CSS, so a direct capture comes out tall/vertical with no side margins.
+  // To always produce the same wide, fixed-layout image (like on desktop), clone the
+  // card into an off-screen container rendered at a fixed desktop width, capture that,
+  // then remove the clone.
+  const FIXED_WIDTH = 760; // matches .memo max-width in CSS
+
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'fixed';
+  wrapper.style.top = '0';
+  wrapper.style.left = '-99999px'; // off-screen, not visible to the user
+  wrapper.style.width = FIXED_WIDTH + 'px';
+  wrapper.style.background = '#ffffff';
+  wrapper.style.padding = '20px';
+
+  const clone = card.cloneNode(true);
+  clone.id = 'memoCardClone';
+  clone.style.margin = '0';
+  clone.style.width = FIXED_WIDTH + 'px';
+  clone.style.maxWidth = FIXED_WIDTH + 'px';
+  clone.style.padding = '26px 30px';
+  clone.querySelector('h3').style.fontSize = '24px';
+  clone.querySelectorAll('.grid2').forEach(g=> g.style.fontSize = '15px');
+  clone.querySelectorAll('table').forEach(tb=> tb.style.fontSize = '14.5px');
+  clone.querySelectorAll('table th, table td').forEach(c=> c.style.padding = '8px 10px');
+
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  let canvas;
+  try{
+    canvas = await html2canvas(clone, { scale: 2, backgroundColor: '#ffffff', width: FIXED_WIDTH + 40, windowWidth: FIXED_WIDTH + 40 });
+  } finally {
+    document.body.removeChild(wrapper);
+  }
+  return canvas;
+}
+
+function canvasToFile(canvas){
+  return new Promise(resolve=>{
+    canvas.toBlob(blob=>{
+      resolve(new File([blob], 'detention-memo.png', { type: 'image/png' }));
+    }, 'image/png');
+  });
+}
+
+async function downloadMemoImage(){
+  const canvas = await getMemoCanvas();
+  if(!canvas) return;
+  const link = document.createElement('a');
+  link.download = 'detention-memo.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function shareMemoImage(){
+  const canvas = await getMemoCanvas();
+  if(!canvas) return;
+  const file = await canvasToFile(canvas);
+  if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+    try{
+      await navigator.share({ files: [file], title: 'Detention Memo' });
+    }catch(e){
+      // user cancelled share sheet — no action needed
+    }
+  } else {
+    showToast('Direct share support nahi — download ho rahi hai');
+    downloadMemoImage();
+  }
+}
+
+// ---------- INIT ----------
+document.getElementById('mapCategory').innerHTML = categoryOptionsHtml();
+renderSections();
+renderTrains();
+renderMapping();
+renderTrainSectionChecks();
+renderMemoTrainSelect();
+renderAddSectionSelect();
+renderManualSectionSelect();
+onMemoModeChange();
+</script>
+</body>
+</html>
